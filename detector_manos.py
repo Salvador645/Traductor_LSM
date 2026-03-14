@@ -1,49 +1,140 @@
 import cv2
 import mediapipe as mp
+import math
 
-# Inicializar mediapipe
 mp_hands = mp.solutions.hands
 mp_draw = mp.solutions.drawing_utils
 
 
 # -----------------------------
-# FUNCION PARA DETECTAR DEDOS
+# DISTANCIA ENTRE LANDMARKS
 # -----------------------------
-def dedos_abiertos(hand_landmarks):
+def distancia(p1, p2):
+    return math.sqrt(
+        (p1.x - p2.x) ** 2 +
+        (p1.y - p2.y) ** 2
+    )
+
+
+# -----------------------------
+# DETECTAR DEDOS ABIERTOS
+# -----------------------------
+def dedos_abiertos(hand):
 
     dedos = []
 
     # Pulgar
-    if hand_landmarks.landmark[4].x < hand_landmarks.landmark[3].x:
+    if hand.landmark[4].x < hand.landmark[3].x:
         dedos.append(1)
     else:
         dedos.append(0)
 
     # Índice
-    if hand_landmarks.landmark[8].y < hand_landmarks.landmark[6].y:
-        dedos.append(1)
-    else:
-        dedos.append(0)
+    dedos.append(1 if hand.landmark[8].y < hand.landmark[6].y else 0)
 
     # Medio
-    if hand_landmarks.landmark[12].y < hand_landmarks.landmark[10].y:
-        dedos.append(1)
-    else:
-        dedos.append(0)
+    dedos.append(1 if hand.landmark[12].y < hand.landmark[10].y else 0)
 
     # Anular
-    if hand_landmarks.landmark[16].y < hand_landmarks.landmark[14].y:
-        dedos.append(1)
-    else:
-        dedos.append(0)
+    dedos.append(1 if hand.landmark[16].y < hand.landmark[14].y else 0)
 
     # Meñique
-    if hand_landmarks.landmark[20].y < hand_landmarks.landmark[18].y:
-        dedos.append(1)
-    else:
-        dedos.append(0)
+    dedos.append(1 if hand.landmark[20].y < hand.landmark[18].y else 0)
 
     return dedos
+
+
+# -----------------------------
+# DETECTAR LETRAS LSM
+# -----------------------------
+def detectar_lsm(hand):
+
+    dedos = dedos_abiertos(hand)
+
+    muñeca = hand.landmark[0]
+    base_medio = hand.landmark[9]
+
+    pulgar = hand.landmark[4]
+    indice = hand.landmark[8]
+
+    tamano_mano = distancia(muñeca, base_medio)
+
+    dist_pi = distancia(pulgar, indice)
+
+    ratio = dist_pi / tamano_mano
+
+    # -----------------------------
+    # A
+    if dedos == [1,0,0,0,0]:
+        return "A"
+
+    # -----------------------------
+    # B
+    if dedos == [0,1,1,1,1]:
+        return "B"
+
+    # -----------------------------
+    # C
+    if 0.4 < ratio < 0.8:
+        return "C"
+
+    # -----------------------------
+    # D
+    if dedos == [0,1,0,0,0]:
+        return "D"
+
+    # -----------------------------
+    # E
+    if dedos == [0,0,0,0,0]:
+        return "E"
+
+        # -----------------------------
+    # F
+    # circulo indice pulgar
+
+    dist_ip = distancia(hand.landmark[8], hand.landmark[4])
+
+    if dist_ip < tamano_mano * 0.25:
+        if dedos[2] == 1 and dedos[3] == 1 and dedos[4] == 1:
+            return "F"
+
+
+    # -----------------------------
+    # G
+    
+    indice = hand.landmark[8]
+    base_indice = hand.landmark[6]
+
+    pulgar = hand.landmark[4]
+    base_pulgar = hand.landmark[2]
+
+    # verificar dedos
+    if dedos[1] == 1 and dedos[0] == 1:
+        if dedos[2] == 0 and dedos[3] == 0 and dedos[4] == 0:
+
+            # indice horizontal
+            if abs(indice.y - base_indice.y) < tamano_mano * 0.2:
+
+                # pulgar vertical
+                if abs(pulgar.x - base_pulgar.x) < tamano_mano * 0.2:
+                    return "G"
+
+    # -----------------------------
+    # H
+    # indice y medio juntos
+
+    if dedos[1] == 1 and dedos[2] == 1:
+        if distancia(hand.landmark[8], hand.landmark[12]) < tamano_mano * 0.15:
+            return "H"
+
+    # -----------------------------
+    # I
+    if dedos == [0,0,0,0,1]:
+        return "I"
+
+    return ""
+
+    
 
 
 # -----------------------------
@@ -51,10 +142,19 @@ def dedos_abiertos(hand_landmarks):
 # -----------------------------
 cap = cv2.VideoCapture(0)
 
+cap.set(3, 640)
+cap.set(4, 480)
+
+texto = ""
+gesto_anterior = ""
+contador = 0
+
+
 with mp_hands.Hands(
         static_image_mode=False,
         max_num_hands=1,
-        min_detection_confidence=0.7) as hands:
+        min_detection_confidence=0.8,
+        min_tracking_confidence=0.8) as hands:
 
     while True:
 
@@ -62,68 +162,47 @@ with mp_hands.Hands(
         if not ret:
             break
 
-        # Voltear imagen para efecto espejo
         frame = cv2.flip(frame, 1)
 
-        # Convertir a RGB
         frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
 
-        # Procesar imagen
         results = hands.process(frame_rgb)
-
-        texto = ""
 
         if results.multi_hand_landmarks:
 
-            for hand_landmarks in results.multi_hand_landmarks:
+            for hand in results.multi_hand_landmarks:
 
-                # Dibujar mano
                 mp_draw.draw_landmarks(
                     frame,
-                    hand_landmarks,
+                    hand,
                     mp_hands.HAND_CONNECTIONS
                 )
 
-                # Numerar puntos
-                for id, lm in enumerate(hand_landmarks.landmark):
+                letra = detectar_lsm(hand)
 
-                    h, w, c = frame.shape
-                    cx, cy = int(lm.x * w), int(lm.y * h)
-
-                    cv2.putText(frame, str(id),
-                                (cx, cy),
-                                cv2.FONT_HERSHEY_SIMPLEX,
-                                0.4, (0,255,0), 1)
-
-                # Detectar dedos
-                dedos = dedos_abiertos(hand_landmarks)
-
-                # -----------------
-                # DETECTAR GESTOS
-                # -----------------
-
-                if dedos == [1,1,1,1,1]:
-                    texto = "MANO ABIERTA"
-
-                elif dedos == [0,0,0,0,0]:
-                    texto = "PUNO"
-
-                elif dedos == [1,0,0,0,0]:
-                    texto = "PULGAR ARRIBA"
-
+                # filtro de estabilidad
+                if letra == gesto_anterior:
+                    contador += 1
                 else:
-                    texto = "GESTO DESCONOCIDO"
+                    contador = 0
 
-        # Mostrar texto
-        cv2.putText(frame, texto,
-                    (10,50),
-                    cv2.FONT_HERSHEY_SIMPLEX,
-                    1, (0,255,0), 2)
+                gesto_anterior = letra
 
-        # Mostrar ventana
-        cv2.imshow("Detector de gestos", frame)
+                if contador > 5 and letra != "":
+                    texto = letra
 
-        # Salir con ESC
+        cv2.putText(
+            frame,
+            "LSM: " + texto,
+            (10, 50),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            1,
+            (0, 255, 0),
+            2
+        )
+
+        cv2.imshow("Traductor LSM", frame)
+
         if cv2.waitKey(1) & 0xFF == 27:
             break
 
