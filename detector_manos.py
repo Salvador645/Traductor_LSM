@@ -49,6 +49,7 @@ def detectar_letra(hand, mano):
     pulgar = hand.landmark[4]
     indice = hand.landmark[8]
     medio = hand.landmark[12]
+    anular = hand.landmark[16]
     meñique = hand.landmark[20]
     tamano_mano = distancia(muñeca, base_medio)
 
@@ -71,29 +72,25 @@ def detectar_letra(hand, mano):
     # A: Solo pulgar abierto
     if dedos == [1,0,0,0,0]:
         return "A", ang_indice, ang_medio, ratio, dedos
-    
+
     # B: Todos los dedos excepto pulgar abiertos
     if dedos == [0,1,1,1,1]:
         return "B", ang_indice, ang_medio, ratio, dedos
-    
+
     # C: Mano abierta en "C"
     if ratio > 0.4 and ratio < 0.8 and dedos[1:] == [1,1,1,1]:
         return "C", ang_indice, ang_medio, ratio, dedos
-    
+
     # D: Índice extendido, resto cerrado
     if dedos == [0,1,0,0,0]:
         if 0.7 < ratio < 0.95:
             return "D", ang_indice, ang_medio, ratio, dedos
-    
+
     # E: Todos los dedos cerrados
     if dedos == [0,0,0,0,0]:
         return "E", ang_indice, ang_medio, ratio, dedos
 
-    # F: Pulgar e índice formando círculo
-    if dedos[0] == 1 and dedos[1] == 1 and sum(dedos[2:]) == 0:
-        if 0.2 < ratio < 0.35:
-            return "F", ang_indice, ang_medio, ratio, dedos
-
+    
     # I: Solo meñique levantado
     if dedos == [0,0,0,0,1]:
         return "I", ang_indice, ang_medio, ratio, dedos
@@ -104,7 +101,7 @@ def detectar_letra(hand, mano):
 
     # U / V: Índice y medio levantados
     if dedos == [0,1,1,0,0]:
-        if dist_im < 0.15:
+        if dist_im < 0.2:
             return "U", ang_indice, ang_medio, ratio, dedos
         else:
             return "V", ang_indice, ang_medio, ratio, dedos
@@ -153,10 +150,11 @@ with mp_hands.Hands(
                 # DEBUG VISUAL
                 # -----------------------------
                 cv2.putText(frame, f"Letra: {letra_actual}", (10,50), cv2.FONT_HERSHEY_SIMPLEX, 1, (0,255,0), 2)
-                cv2.putText(frame, f"Ang indice: {int(ang_indice)}", (10,100), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (255,255,0), 2)
-                cv2.putText(frame, f"Ang medio: {int(ang_medio)}", (10,130), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (255,255,0), 2)
-                cv2.putText(frame, f"Ratio PI: {ratio:.2f}", (10,160), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (255,255,0), 2)
-                cv2.putText(frame, f"Dedos: {dedos}", (10,190), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (255,255,0), 2)
+                cv2.putText(frame, f"Mano: {mano}", (10,80), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0,255,255), 2)
+                cv2.putText(frame, f"Ang indice: {int(ang_indice)}", (10,110), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (255,255,0), 2)
+                cv2.putText(frame, f"Ang medio: {int(ang_medio)}", (10,140), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (255,255,0), 2)
+                cv2.putText(frame, f"Ratio PI: {ratio:.2f}", (10,170), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (255,255,0), 2)
+                cv2.putText(frame, f"Dedos: {dedos}", (10,200), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (255,255,0), 2)
 
         cv2.imshow("Detector LSM", frame)
         if cv2.waitKey(1) & 0xFF == 27:
