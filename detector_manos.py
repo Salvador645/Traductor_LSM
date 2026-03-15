@@ -109,6 +109,10 @@ def detectar_letra(hand, mano):
     # W: Índice, medio y anular levantados
     if dedos == [0,1,1,1,0]:
         return "W", ang_indice, ang_medio, ratio, dedos
+    
+    # F: pulgar levantado, índice doblado tocando pulgar, medio/anular/meñique levantados
+    if dedos == [1,0,1,1,1] and 0.20 <= ratio <= 0.25:
+        return "F", ang_indice, ang_medio, ratio, dedos
 
     # Default: no detectada
     return "", ang_indice, ang_medio, ratio, dedos
