@@ -69,50 +69,58 @@ def detectar_letra(hand, mano):
     # REGLAS DEPURADAS LETRAS FUNCIONALES
     # -----------------------------
 
-    # A: Solo pulgar abierto
+    # A
     if dedos == [1,0,0,0,0]:
         return "A", ang_indice, ang_medio, ratio, dedos
 
-    # B: Todos los dedos excepto pulgar abiertos
+    # B
     if dedos == [0,1,1,1,1]:
         return "B", ang_indice, ang_medio, ratio, dedos
 
-    # C: Mano abierta en "C"
+    # C
     if ratio > 0.4 and ratio < 0.8 and dedos[1:] == [1,1,1,1]:
         return "C", ang_indice, ang_medio, ratio, dedos
 
-    # D: Índice extendido, resto cerrado
+    # D
     if dedos == [0,1,0,0,0]:
         if 0.7 < ratio < 0.95:
             return "D", ang_indice, ang_medio, ratio, dedos
 
-    # E: Todos los dedos cerrados
+    # E
     if dedos == [0,0,0,0,0]:
         return "E", ang_indice, ang_medio, ratio, dedos
 
     
-    # I: Solo meñique levantado
+    # I
     if dedos == [0,0,0,0,1]:
         return "I", ang_indice, ang_medio, ratio, dedos
 
-    # L: Pulgar e índice extendidos
-    if dedos == [1,1,0,0,0]:
+    # L: índice levantado y pulgar abierto (forma de “L”)
+    if dedos == [1,1,0,0,0] and -95 <= ang_indice <= -85 and 75 <= ang_medio <= 85:
         return "L", ang_indice, ang_medio, ratio, dedos
 
-    # U / V: Índice y medio levantados
+    # U / V
     if dedos == [0,1,1,0,0]:
         if dist_im < 0.2:
             return "U", ang_indice, ang_medio, ratio, dedos
         else:
             return "V", ang_indice, ang_medio, ratio, dedos
 
-    # W: Índice, medio y anular levantados
+    # W
     if dedos == [0,1,1,1,0]:
         return "W", ang_indice, ang_medio, ratio, dedos
     
-    # F: pulgar levantado, índice doblado tocando pulgar, medio/anular/meñique levantados
+    # F
     if dedos == [1,0,1,1,1] and 0.20 <= ratio <= 0.25:
         return "F", ang_indice, ang_medio, ratio, dedos
+    
+    # G
+    if dedos == [1,1,0,0,0] and -75 <= ang_indice <= -55:
+     return "G", ang_indice, ang_medio, ratio, dedos
+    
+    # H
+    if dedos == [1,1,1,0,0] and -75 <= ang_indice <= -55:
+        return "H", ang_indice, ang_medio, ratio, dedos
 
     # Default: no detectada
     return "", ang_indice, ang_medio, ratio, dedos
