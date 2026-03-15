@@ -24,23 +24,23 @@ def angulo(p1, p2):
 # -----------------------------
 def dedos_abiertos(hand, mano):
     dedos = []
-    # pulgar
+    # Pulgar
     if mano == "Right":
         dedos.append(1 if hand.landmark[4].x < hand.landmark[3].x else 0)
     else:
         dedos.append(1 if hand.landmark[4].x > hand.landmark[3].x else 0)
-    # índice
+    # Índice
     dedos.append(1 if hand.landmark[8].y < hand.landmark[6].y else 0)
-    # medio
+    # Medio
     dedos.append(1 if hand.landmark[12].y < hand.landmark[10].y else 0)
-    # anular
+    # Anular
     dedos.append(1 if hand.landmark[16].y < hand.landmark[14].y else 0)
-    # meñique
+    # Meñique
     dedos.append(1 if hand.landmark[20].y < hand.landmark[18].y else 0)
     return dedos
 
 # -----------------------------
-# DETECTAR LETRA
+# DETECTAR LETRA (VERSION DEPURADA)
 # -----------------------------
 def detectar_letra(hand, mano):
     dedos = dedos_abiertos(hand, mano)
@@ -48,39 +48,72 @@ def detectar_letra(hand, mano):
     base_medio = hand.landmark[9]
     pulgar = hand.landmark[4]
     indice = hand.landmark[8]
+    medio = hand.landmark[12]
+    meñique = hand.landmark[20]
     tamano_mano = distancia(muñeca, base_medio)
 
     # ANGULOS
-    ang_indice = angulo(hand.landmark[5], hand.landmark[8])
-    ang_medio = angulo(hand.landmark[9], hand.landmark[12])
+    ang_indice = angulo(hand.landmark[5], indice)
+    ang_medio = angulo(base_medio, medio)
+    ang_menique = angulo(hand.landmark[17], meñique)
+
     # RATIO pulgar-indice
     dist_pi = distancia(pulgar, indice)
     ratio = dist_pi / tamano_mano
 
+    # Distancia índice-medio para U/V
+    dist_im = distancia(indice, medio) / tamano_mano
+
     # -----------------------------
-    # REGLAS PARA LETRAS A-E
+    # REGLAS DEPURADAS LETRAS FUNCIONALES
     # -----------------------------
-    # A
+
+    # A: Solo pulgar abierto
     if dedos == [1,0,0,0,0]:
         return "A", ang_indice, ang_medio, ratio, dedos
-
-    # B
+    
+    # B: Todos los dedos excepto pulgar abiertos
     if dedos == [0,1,1,1,1]:
         return "B", ang_indice, ang_medio, ratio, dedos
-
-    # C
+    
+    # C: Mano abierta en "C"
     if ratio > 0.4 and ratio < 0.8 and dedos[1:] == [1,1,1,1]:
         return "C", ang_indice, ang_medio, ratio, dedos
-
-    # D
+    
+    # D: Índice extendido, resto cerrado
     if dedos == [0,1,0,0,0]:
-        if -105 < ang_indice < -75 and 75 < ang_medio < 105 and 0.7 < ratio < 0.95:
+        if 0.7 < ratio < 0.95:
             return "D", ang_indice, ang_medio, ratio, dedos
-
-    # E
+    
+    # E: Todos los dedos cerrados
     if dedos == [0,0,0,0,0]:
         return "E", ang_indice, ang_medio, ratio, dedos
 
+    # F: Pulgar e índice formando círculo
+    if dedos[0] == 1 and dedos[1] == 1 and sum(dedos[2:]) == 0:
+        if 0.2 < ratio < 0.35:
+            return "F", ang_indice, ang_medio, ratio, dedos
+
+    # I: Solo meñique levantado
+    if dedos == [0,0,0,0,1]:
+        return "I", ang_indice, ang_medio, ratio, dedos
+
+    # L: Pulgar e índice extendidos
+    if dedos == [1,1,0,0,0]:
+        return "L", ang_indice, ang_medio, ratio, dedos
+
+    # U / V: Índice y medio levantados
+    if dedos == [0,1,1,0,0]:
+        if dist_im < 0.15:
+            return "U", ang_indice, ang_medio, ratio, dedos
+        else:
+            return "V", ang_indice, ang_medio, ratio, dedos
+
+    # W: Índice, medio y anular levantados
+    if dedos == [0,1,1,1,0]:
+        return "W", ang_indice, ang_medio, ratio, dedos
+
+    # Default: no detectada
     return "", ang_indice, ang_medio, ratio, dedos
 
 # -----------------------------
