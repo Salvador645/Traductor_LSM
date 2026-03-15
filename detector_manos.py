@@ -23,22 +23,22 @@ def dedos_abiertos(hand, mano):
 
     dedos = []
 
-    # Pulgar depende de la mano
+    # pulgar
     if mano == "Right":
         dedos.append(1 if hand.landmark[4].x < hand.landmark[3].x else 0)
     else:
         dedos.append(1 if hand.landmark[4].x > hand.landmark[3].x else 0)
 
-    # Índice
+    # índice
     dedos.append(1 if hand.landmark[8].y < hand.landmark[6].y else 0)
 
-    # Medio
+    # medio
     dedos.append(1 if hand.landmark[12].y < hand.landmark[10].y else 0)
 
-    # Anular
+    # anular
     dedos.append(1 if hand.landmark[16].y < hand.landmark[14].y else 0)
 
-    # Meñique
+    # meñique
     dedos.append(1 if hand.landmark[20].y < hand.landmark[18].y else 0)
 
     return dedos
@@ -63,75 +63,58 @@ def detectar_letra(hand, mano):
     ratio = dist_pi / tamano_mano
 
 
-    # -----------------------------
     # A
     if dedos == [1,0,0,0,0]:
         return "A"
 
-
-    # -----------------------------
     # B
     if dedos == [0,1,1,1,1]:
         return "B"
 
-
-    # -----------------------------
     # C
     if 0.4 < ratio < 0.8:
         return "C"
 
-
-    # -----------------------------
     # D
     if dedos == [0,1,0,0,0]:
         return "D"
 
-
-    # -----------------------------
     # E
     if dedos == [0,0,0,0,0]:
         return "E"
 
-
-    # -----------------------------
     # F
     if distancia(hand.landmark[8], hand.landmark[4]) < tamano_mano * 0.25:
         if dedos[2] == 1 and dedos[3] == 1 and dedos[4] == 1:
             return "F"
 
-
-    # -----------------------------
-    # G
-    if dedos == [1,1,0,0,0]:
-        if abs(hand.landmark[8].y - hand.landmark[4].y) < tamano_mano * 0.2:
-            return "G"
-
-
-    # -----------------------------
-    # H
-    if dedos == [0,1,1,0,0]:
-        return "H"
-
-
-    # -----------------------------
     # I
     if dedos == [0,0,0,0,1]:
         return "I"
 
+    # L
+    if dedos == [1,1,0,0,0]:
+
+        dx = abs(hand.landmark[8].x - hand.landmark[6].x)
+        dy = abs(hand.landmark[8].y - hand.landmark[6].y)
+
+        if dy > dx:
+            return "L"
 
     return ""
 
 
 # -----------------------------
-# CAMARA (Logitech)
+# CAMARA
 # -----------------------------
 cap = cv2.VideoCapture(1, cv2.CAP_DSHOW)
 
 cap.set(3,1280)
 cap.set(4,720)
 
+letra_actual = ""
+palabra = ""
 
-texto = ""
 gesto_anterior = ""
 contador = 0
 
@@ -164,7 +147,6 @@ with mp_hands.Hands(
                     mp_hands.HAND_CONNECTIONS
                 )
 
-                # detectar mano izquierda o derecha
                 mano = results.multi_handedness[i].classification[0].label
 
                 letra = detectar_letra(hand, mano)
@@ -177,23 +159,15 @@ with mp_hands.Hands(
                 gesto_anterior = letra
 
                 if contador > 10 and letra != "":
-                    texto = letra
+                    letra_actual = letra
 
 
-                cv2.putText(
-                    frame,
-                    f"Mano: {mano}",
-                    (10,100),
-                    cv2.FONT_HERSHEY_SIMPLEX,
-                    0.7,
-                    (255,0,0),
-                    2
-                )
-
-
+        # -----------------------------
+        # TEXTO EN PANTALLA
+        # -----------------------------
         cv2.putText(
             frame,
-            f"LSM: {texto}",
+            f"Letra: {letra_actual}",
             (10,50),
             cv2.FONT_HERSHEY_SIMPLEX,
             1,
@@ -201,10 +175,39 @@ with mp_hands.Hands(
             2
         )
 
+        cv2.putText(
+            frame,
+            f"Palabra: {palabra}",
+            (10,100),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            1,
+            (0,255,255),
+            2
+        )
+
 
         cv2.imshow("Traductor LSM", frame)
 
-        if cv2.waitKey(1) & 0xFF == 27:
+        # -----------------------------
+        # CONTROL CON TECLADO
+        # -----------------------------
+        key = cv2.waitKey(1) & 0xFF
+
+        # ENTER → agregar letra
+        if key == 13:
+            if letra_actual != "":
+                palabra += letra_actual
+
+        # SPACE → espacio
+        elif key == 32:
+            palabra += " "
+
+        # BACKSPACE → borrar
+        elif key == 8:
+            palabra = palabra[:-1]
+
+        # ESC → salir
+        elif key == 27:
             break
 
 
