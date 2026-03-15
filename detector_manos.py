@@ -88,54 +88,60 @@ def detectar_lsm(hand):
     if dedos == [0,0,0,0,0]:
         return "E"
 
-        # -----------------------------
+    # -----------------------------
     # F
-    # circulo indice pulgar
-
-    dist_ip = distancia(hand.landmark[8], hand.landmark[4])
-
-    if dist_ip < tamano_mano * 0.25:
+    if distancia(hand.landmark[8], hand.landmark[4]) < tamano_mano * 0.25:
         if dedos[2] == 1 and dedos[3] == 1 and dedos[4] == 1:
             return "F"
 
-
-    # -----------------------------
-    # G
-    
-    indice = hand.landmark[8]
-    base_indice = hand.landmark[6]
-
-    pulgar = hand.landmark[4]
-    base_pulgar = hand.landmark[2]
-
-    # verificar dedos
-    if dedos[1] == 1 and dedos[0] == 1:
-        if dedos[2] == 0 and dedos[3] == 0 and dedos[4] == 0:
-
-            # indice horizontal
-            if abs(indice.y - base_indice.y) < tamano_mano * 0.2:
-
-                # pulgar vertical
-                if abs(pulgar.x - base_pulgar.x) < tamano_mano * 0.2:
-                    return "G"
-
-    # -----------------------------
-    # H
-    # indice y medio juntos
-
-    if dedos[1] == 1 and dedos[2] == 1:
-        if distancia(hand.landmark[8], hand.landmark[12]) < tamano_mano * 0.15:
-            return "H"
-
     # -----------------------------
     # I
+    menique = hand.landmark[20]
+    base_menique = hand.landmark[18]
+
     if dedos == [0,0,0,0,1]:
-        return "I"
+        if menique.y < base_menique.y:  
+            return "I"
 
-    return ""
+    # -----------------------------
+    # K
+    indice = hand.landmark[8]
+    medio = hand.landmark[12]
+    pulgar = hand.landmark[4]
 
+    if dedos == [1,1,1,0,0]:
+        if pulgar.y > indice.y and pulgar.y > medio.y:
+            return "K"
+
+    # -----------------------------
+    # L
+    if dedos == [1,1,0,0,0]:
+        return "L"
     
+    # -----------------------------
+    # M
+    if dedos == [0,0,0,0,0]:
 
+        if distancia(hand.landmark[8], hand.landmark[4]) < tamano_mano*0.25 and \
+        distancia(hand.landmark[12], hand.landmark[4]) < tamano_mano*0.25 and \
+        distancia(hand.landmark[16], hand.landmark[4]) < tamano_mano*0.25:
+            return "M"
+        
+    # -----------------------------
+    # N
+    if dedos == [0,0,0,0,0]:
+
+        if distancia(hand.landmark[8], hand.landmark[4]) < tamano_mano*0.25 and \
+        distancia(hand.landmark[12], hand.landmark[4]) < tamano_mano*0.25:
+            return "N"
+        
+    # -----------------------------
+    # O
+    if distancia(hand.landmark[8], hand.landmark[4]) < tamano_mano*0.3 and \
+    distancia(hand.landmark[12], hand.landmark[4]) < tamano_mano*0.3 and \
+    distancia(hand.landmark[16], hand.landmark[4]) < tamano_mano*0.3 and \
+    distancia(hand.landmark[20], hand.landmark[4]) < tamano_mano*0.3:
+        return "O"
 
 # -----------------------------
 # CAMARA
@@ -180,7 +186,6 @@ with mp_hands.Hands(
 
                 letra = detectar_lsm(hand)
 
-                # filtro de estabilidad
                 if letra == gesto_anterior:
                     contador += 1
                 else:
@@ -193,11 +198,11 @@ with mp_hands.Hands(
 
         cv2.putText(
             frame,
-            "LSM: " + texto,
+            f"LSM: {texto}",
             (10, 50),
             cv2.FONT_HERSHEY_SIMPLEX,
             1,
-            (0, 255, 0),
+            (0,255,0),
             2
         )
 
