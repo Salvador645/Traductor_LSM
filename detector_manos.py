@@ -19,15 +19,15 @@ def distancia(p1, p2):
 # -----------------------------
 # DETECTAR DEDOS ABIERTOS
 # -----------------------------
-def dedos_abiertos(hand):
+def dedos_abiertos(hand, mano):
 
     dedos = []
 
-    # Pulgar
-    if hand.landmark[4].x < hand.landmark[3].x:
-        dedos.append(1)
+    # Pulgar depende de la mano
+    if mano == "Right":
+        dedos.append(1 if hand.landmark[4].x < hand.landmark[3].x else 0)
     else:
-        dedos.append(0)
+        dedos.append(1 if hand.landmark[4].x > hand.landmark[3].x else 0)
 
     # Índice
     dedos.append(1 if hand.landmark[8].y < hand.landmark[6].y else 0)
@@ -45,11 +45,11 @@ def dedos_abiertos(hand):
 
 
 # -----------------------------
-# DETECTAR LETRAS LSM
+# DETECTAR LETRAS
 # -----------------------------
-def detectar_lsm(hand):
+def detectar_letra(hand, mano):
 
-    dedos = dedos_abiertos(hand)
+    dedos = dedos_abiertos(hand, mano)
 
     muñeca = hand.landmark[0]
     base_medio = hand.landmark[9]
@@ -58,35 +58,40 @@ def detectar_lsm(hand):
     indice = hand.landmark[8]
 
     tamano_mano = distancia(muñeca, base_medio)
-
     dist_pi = distancia(pulgar, indice)
 
     ratio = dist_pi / tamano_mano
+
 
     # -----------------------------
     # A
     if dedos == [1,0,0,0,0]:
         return "A"
 
+
     # -----------------------------
     # B
     if dedos == [0,1,1,1,1]:
         return "B"
+
 
     # -----------------------------
     # C
     if 0.4 < ratio < 0.8:
         return "C"
 
+
     # -----------------------------
     # D
     if dedos == [0,1,0,0,0]:
         return "D"
 
+
     # -----------------------------
     # E
     if dedos == [0,0,0,0,0]:
         return "E"
+
 
     # -----------------------------
     # F
@@ -94,62 +99,37 @@ def detectar_lsm(hand):
         if dedos[2] == 1 and dedos[3] == 1 and dedos[4] == 1:
             return "F"
 
+
+    # -----------------------------
+    # G
+    if dedos == [1,1,0,0,0]:
+        if abs(hand.landmark[8].y - hand.landmark[4].y) < tamano_mano * 0.2:
+            return "G"
+
+
+    # -----------------------------
+    # H
+    if dedos == [0,1,1,0,0]:
+        return "H"
+
+
     # -----------------------------
     # I
-    menique = hand.landmark[20]
-    base_menique = hand.landmark[18]
-
     if dedos == [0,0,0,0,1]:
-        if menique.y < base_menique.y:  
-            return "I"
+        return "I"
 
-    # -----------------------------
-    # K
-    indice = hand.landmark[8]
-    medio = hand.landmark[12]
-    pulgar = hand.landmark[4]
 
-    if dedos == [1,1,1,0,0]:
-        if pulgar.y > indice.y and pulgar.y > medio.y:
-            return "K"
+    return ""
 
-    # -----------------------------
-    # L
-    if dedos == [1,1,0,0,0]:
-        return "L"
-    
-    # -----------------------------
-    # M
-    if dedos == [0,0,0,0,0]:
-
-        if distancia(hand.landmark[8], hand.landmark[4]) < tamano_mano*0.25 and \
-        distancia(hand.landmark[12], hand.landmark[4]) < tamano_mano*0.25 and \
-        distancia(hand.landmark[16], hand.landmark[4]) < tamano_mano*0.25:
-            return "M"
-        
-    # -----------------------------
-    # N
-    if dedos == [0,0,0,0,0]:
-
-        if distancia(hand.landmark[8], hand.landmark[4]) < tamano_mano*0.25 and \
-        distancia(hand.landmark[12], hand.landmark[4]) < tamano_mano*0.25:
-            return "N"
-        
-    # -----------------------------
-    # O
-    if distancia(hand.landmark[8], hand.landmark[4]) < tamano_mano*0.3 and \
-    distancia(hand.landmark[12], hand.landmark[4]) < tamano_mano*0.3 and \
-    distancia(hand.landmark[16], hand.landmark[4]) < tamano_mano*0.3 and \
-    distancia(hand.landmark[20], hand.landmark[4]) < tamano_mano*0.3:
-        return "O"
 
 # -----------------------------
-# CAMARA
+# CAMARA (Logitech)
 # -----------------------------
-cap = cv2.VideoCapture(1)
+cap = cv2.VideoCapture(1, cv2.CAP_DSHOW)
 
-cap.set(3, 640)
-cap.set(4, 480)
+cap.set(3,1280)
+cap.set(4,720)
+
 
 texto = ""
 gesto_anterior = ""
@@ -176,7 +156,7 @@ with mp_hands.Hands(
 
         if results.multi_hand_landmarks:
 
-            for hand in results.multi_hand_landmarks:
+            for i, hand in enumerate(results.multi_hand_landmarks):
 
                 mp_draw.draw_landmarks(
                     frame,
@@ -184,27 +164,43 @@ with mp_hands.Hands(
                     mp_hands.HAND_CONNECTIONS
                 )
 
-                letra = detectar_lsm(hand)
+                # detectar mano izquierda o derecha
+                mano = results.multi_handedness[i].classification[0].label
+
+                letra = detectar_letra(hand, mano)
 
                 if letra == gesto_anterior:
                     contador += 1
                 else:
-                    contador = 0
+                    contador = 1
 
                 gesto_anterior = letra
 
-                if contador > 5 and letra != "":
+                if contador > 10 and letra != "":
                     texto = letra
+
+
+                cv2.putText(
+                    frame,
+                    f"Mano: {mano}",
+                    (10,100),
+                    cv2.FONT_HERSHEY_SIMPLEX,
+                    0.7,
+                    (255,0,0),
+                    2
+                )
+
 
         cv2.putText(
             frame,
             f"LSM: {texto}",
-            (10, 50),
+            (10,50),
             cv2.FONT_HERSHEY_SIMPLEX,
             1,
             (0,255,0),
             2
         )
+
 
         cv2.imshow("Traductor LSM", frame)
 
