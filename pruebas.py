@@ -121,9 +121,12 @@ def detectar_letra_derecha(hand, mano):
     # M
     if dedos == [0,1,1,1,0]:
         return "M", ang_indice, ang_medio, ratio, dedos
+    
+    # N
+    if dedos == [0,1,1,0,0] and -105 <= ang_indice <= -75 and dist_im < 0.18:
+        return "N", ang_indice, ang_medio, ratio, dedos
 
     return "", ang_indice, ang_medio, ratio, dedos
-
 
 # -----------------------------
 # CAMARA
