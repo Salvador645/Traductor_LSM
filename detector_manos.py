@@ -40,9 +40,9 @@ def dedos_abiertos(hand, mano):
     return dedos
 
 # -----------------------------
-# DETECTAR LETRA (VERSION DEPURADA)
+# DETECTAR LETRA MANO DERECHA
 # -----------------------------
-def detectar_letra(hand, mano):
+def detectar_letra_derecha(hand, mano):
     dedos = dedos_abiertos(hand, mano)
     muñeca = hand.landmark[0]
     base_medio = hand.landmark[9]
@@ -66,36 +66,28 @@ def detectar_letra(hand, mano):
     dist_im = distancia(indice, medio) / tamano_mano
 
     # -----------------------------
-    # REGLAS DEPURADAS LETRAS FUNCIONALES
+    # LETRAS FUNCIONALES MANO DERECHA
     # -----------------------------
 
-    # A
     if dedos == [1,0,0,0,0]:
         return "A", ang_indice, ang_medio, ratio, dedos
 
-    # B
     if dedos == [0,1,1,1,1]:
         return "B", ang_indice, ang_medio, ratio, dedos
 
-    # C
     if ratio > 0.4 and ratio < 0.8 and dedos[1:] == [1,1,1,1]:
         return "C", ang_indice, ang_medio, ratio, dedos
 
-    # D
-    if dedos == [0,1,0,0,0]:
-        if 0.7 < ratio < 0.95:
-            return "D", ang_indice, ang_medio, ratio, dedos
+    if dedos == [0,1,0,0,0] and 0.7 < ratio < 0.95:
+        return "D", ang_indice, ang_medio, ratio, dedos
 
-    # E
     if dedos == [0,0,0,0,0]:
         return "E", ang_indice, ang_medio, ratio, dedos
 
-    
-    # I
     if dedos == [0,0,0,0,1]:
         return "I", ang_indice, ang_medio, ratio, dedos
 
-    # L: índice levantado y pulgar abierto (forma de “L”)
+    # L: índice levantado y pulgar abierto
     if dedos == [1,1,0,0,0] and -95 <= ang_indice <= -85 and 75 <= ang_medio <= 85:
         return "L", ang_indice, ang_medio, ratio, dedos
 
@@ -106,23 +98,74 @@ def detectar_letra(hand, mano):
         else:
             return "V", ang_indice, ang_medio, ratio, dedos
 
-    # W
     if dedos == [0,1,1,1,0]:
         return "W", ang_indice, ang_medio, ratio, dedos
-    
-    # F
+
     if dedos == [1,0,1,1,1] and 0.20 <= ratio <= 0.25:
         return "F", ang_indice, ang_medio, ratio, dedos
-    
-    # G
+
     if dedos == [1,1,0,0,0] and -75 <= ang_indice <= -55:
-     return "G", ang_indice, ang_medio, ratio, dedos
-    
-    # H
+        return "G", ang_indice, ang_medio, ratio, dedos
+
     if dedos == [1,1,1,0,0] and -75 <= ang_indice <= -55:
         return "H", ang_indice, ang_medio, ratio, dedos
 
-    # Default: no detectada
+    return "", ang_indice, ang_medio, ratio, dedos
+
+# -----------------------------
+# DETECTAR LETRA MANO IZQUIERDA (vacío por ahora)
+# -----------------------------
+def detectar_letra_izquierda(hand, mano):
+    dedos = dedos_abiertos(hand, mano)
+    muñeca = hand.landmark[0]
+    base_medio = hand.landmark[9]
+    pulgar = hand.landmark[4]
+    indice = hand.landmark[8]
+    medio = hand.landmark[12]
+    anular = hand.landmark[16]
+    meñique = hand.landmark[20]
+    tamano_mano = distancia(muñeca, base_medio)
+
+    # ANGULOS
+    ang_indice = angulo(hand.landmark[5], indice)
+    ang_medio = angulo(base_medio, medio)
+    ang_menique = angulo(hand.landmark[17], meñique)
+
+    # RATIO pulgar-indice
+    dist_pi = distancia(pulgar, indice)
+    ratio = dist_pi / tamano_mano
+
+    # Distancia índice-medio
+    dist_im = distancia(indice, medio) / tamano_mano
+
+    # -----------------------------
+    # LETRAS MANO IZQUIERDA
+    # -----------------------------
+
+    # M
+    if dedos == [0,1,1,1,0] and -105 <= ang_indice <= -75:
+        return "M", ang_indice, ang_medio, ratio, dedos
+
+    # N (índice y medio juntos)
+    if dedos == [0,1,1,0,0] and -105 <= ang_indice <= -75 and dist_im < 0.18:
+        return "N", ang_indice, ang_medio, ratio, dedos
+
+    # O
+    if dedos == [1,0,0,0,0]:
+        return "O", ang_indice, ang_medio, ratio, dedos
+    
+    # J
+    if dedos == [0,0,0,0,1]:
+        return "J", ang_indice, ang_medio, ratio, dedos
+
+    # K (como D pero mano izquierda)
+    if dedos == [0,1,0,0,0] and 0.7 < ratio < 0.95:
+        return "K", ang_indice, ang_medio, ratio, dedos
+    
+    # P (como V pero mano izquierda)
+    if dedos == [0,1,1,0,0] and dist_im >= 0.18:
+        return "P", ang_indice, ang_medio, ratio, dedos
+
     return "", ang_indice, ang_medio, ratio, dedos
 
 # -----------------------------
@@ -154,7 +197,14 @@ with mp_hands.Hands(
                 mp_draw.draw_landmarks(frame, hand, mp_hands.HAND_CONNECTIONS)
                 mano = results.multi_handedness[i].classification[0].label
 
-                letra, ang_indice, ang_medio, ratio, dedos = detectar_letra(hand, mano)
+                # -----------------------------
+                # REGLAS SEGUN MANO
+                # -----------------------------
+                if mano == "Right":
+                    letra, ang_indice, ang_medio, ratio, dedos = detectar_letra_derecha(hand, mano)
+                else:
+                    letra, ang_indice, ang_medio, ratio, dedos = detectar_letra_izquierda(hand, mano)
+
                 if letra != "":
                     letra_actual = letra
 
