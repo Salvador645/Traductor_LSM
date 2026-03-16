@@ -169,6 +169,30 @@ def detectar_letra_izquierda(hand, mano):
     # Q: pulgar + indice formando C (pero separados)
     if dedos == [1,1,0,0,0] and 0.40 <= ratio <= 0.80:
         return "Q", ang_indice, ang_medio, ratio, dedos
+    
+    # S
+    if dedos == [0,0,0,0,0]:
+        return "S", ang_indice, ang_medio, ratio, dedos
+    
+    # Y (indice y meñique arriba)
+    if dedos == [0,1,0,0,1]:
+        return "Y", ang_indice, ang_medio, ratio, dedos
+    
+    # R
+    if dedos == [1,1,0,0,0] and -80 <= ang_indice <= -50:
+        return "R", ang_indice, ang_medio, ratio, dedos
+    
+    # X (indice doblado)
+    if dedos == [0,1,0,0,0] and -80 <= ang_indice <= -50:
+        return "X", ang_indice, ang_medio, ratio, dedos
+    
+    # T (como R pero indice vertical)
+    if dedos == [1,1,0,0,0] and -10 <= ang_indice <= 10:
+        return "T", ang_indice, ang_medio, ratio, dedos
+    
+    # Z
+    if dedos == [1,1,1,0,0] and -80 <= ang_indice <= -50:
+        return "Z", ang_indice, ang_medio, ratio, dedos
 
     return "", ang_indice, ang_medio, ratio, dedos
 
